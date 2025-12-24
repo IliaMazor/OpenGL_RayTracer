@@ -1,0 +1,23 @@
+#version 330 core
+
+out vec4 screenColor;
+
+uniform vec3 eye;
+uniform vec2 screenSize;
+uniform float L, R, B, T, N;
+
+void main(){
+    float pixelX = gl_FragCoord.x;
+    float pixelY = gl_FragCoord.y;
+
+    float stepX = (R - L) / screenSize.x;
+    float stepY = (T - B) / screenSize.y;
+
+    float x = L + stepX * (pixelX + 0.5);
+    float y = B + stepY * (pixelY + 0.5);
+
+    vec3 pixelCenter = vec3(x, y, N);
+    vec3 direction = normalize(pixelCenter - eye);
+
+    screenColor = vec4(direction * 0.5 + 0.5, 1.0);
+}
