@@ -8,6 +8,7 @@ add_executable(ray_tracer
     src/main.cpp
     src/glad.c
     src/triangle_mesh.cpp
+    src/scene.cpp
 )
 
 target_include_directories(ray_tracer PRIVATE 

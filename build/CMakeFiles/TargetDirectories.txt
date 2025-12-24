@@ -1,3 +1,0 @@
-C:/Personal Coding/Ray tracer recreation/build/CMakeFiles/ray_tracer.dir
-C:/Personal Coding/Ray tracer recreation/build/CMakeFiles/edit_cache.dir
-C:/Personal Coding/Ray tracer recreation/build/CMakeFiles/rebuild_cache.dir

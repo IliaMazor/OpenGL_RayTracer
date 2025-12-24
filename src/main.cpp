@@ -1,5 +1,6 @@
 #include "config.h"
 #include "triangle_mesh.h"
+#include "scene.h"
 
 int main() {
     std::ifstream file;
@@ -114,30 +115,15 @@ void generateWindow(){
     TriangleMesh* triangleMesh= new TriangleMesh();
 
     unsigned int shader = make_shader("src/shaders/vertex.txt", "src/shaders/fragment.txt");
-    // get uniform locations
-    int eyeLoc = glGetUniformLocation(shader, "eye");
-    int screenLoc = glGetUniformLocation(shader, "screenSize");
-    int lLoc = glGetUniformLocation(shader, "L");
-    int rLoc = glGetUniformLocation(shader, "R");
-    int bLoc = glGetUniformLocation(shader, "B");
-    int tLoc = glGetUniformLocation(shader, "T");
-    int nLoc = glGetUniformLocation(shader, "N");
 
-    // set values (do this after glUseProgram)
+    Scene scene;
     glUseProgram(shader);
-    glUniform3f(eyeLoc, 0.0f, 0.0f, 60.0f);      // same as your Processing eye
-    glUniform2f(screenLoc, 800.0f, 800.0f);
-    glUniform1f(lLoc, -10.0f);
-    glUniform1f(rLoc, 10.0f);
-    glUniform1f(bLoc, -10.0f);
-    glUniform1f(tLoc, 10.0f);
-    glUniform1f(nLoc, 16.0f);
-
+    scene.sendUniforms(shader);
 
     // int w,h;
     // glfwGetFramebufferSize(window, &w, &h); // Get the framebuffer size
     // glViewport(0,0,w,h);
-
+    
     //render loop
     while(!glfwWindowShouldClose(window)) {
         // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);  // teal-ish color
@@ -150,12 +136,35 @@ void generateWindow(){
     }
 
 
-    //std:: cout << "Hello, World!" << std::endl;
+    //std:: cout << "Hello, World!" << std::endl;B
     glDeleteProgram(shader); // Delete the shader program
     delete triangleMesh; // Free the triangle mesh
     glfwTerminate(); // Terminate GLFW
 }
 
+
+// void ray_trace(unsigned int shader)
+// {
+//     // get uniform locations
+//     int eyeLoc = glGetUniformLocation(shader, "eye");
+//     int screenLoc = glGetUniformLocation(shader, "screenSize");
+//     int lLoc = glGetUniformLocation(shader, "L");
+//     int rLoc = glGetUniformLocation(shader, "R");
+//     int bLoc = glGetUniformLocation(shader, "B");
+//     int tLoc = glGetUniformLocation(shader, "T");
+//     int nLoc = glGetUniformLocation(shader, "N");
+
+//     // set values (do this after glUseProgram)
+//     glUseProgram(shader);
+//     glUniform3f(eyeLoc, 0.0f, 0.0f, 60.0f);      // same as your Processing eye
+//     glUniform2f(screenLoc, 800.0f, 800.0f);
+//     glUniform1f(lLoc, -10.0f);
+//     glUniform1f(rLoc, 10.0f);
+//     glUniform1f(bLoc, -10.0f);
+//     glUniform1f(tLoc, 10.0f);
+//     glUniform1f(nLoc, 16.0f);
+
+// }
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)

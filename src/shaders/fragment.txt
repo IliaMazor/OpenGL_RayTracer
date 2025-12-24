@@ -2,22 +2,124 @@
 
 out vec4 screenColor;
 
+// camera
 uniform vec3 eye;
-uniform vec2 screenSize;
+uniform vec2 screen_size;
 uniform float L, R, B, T, N;
 
-void main(){
+// plane
+uniform vec3 planePoint;
+uniform vec3 planeNormal;
+uniform vec3 planeColor;
+
+
+//sphere
+uniform vec3 sphereCenter;
+uniform float sphereRadius;
+uniform vec3 sphereColor;
+
+
+uniform vec3 light_source;
+
+
+const vec3 MATERIAL = vec3(0.4, 0.6, 0.6);
+const float SHININESS = 100.0;
+
+
+float planeIntersect(vec3 rayOrigin, vec3 rayDir, vec3 point, vec3 normal);
+vec3 phong(float t, vec3 eye, vec3 direction, vec3 normal, vec3 color);
+float sphereIntersect(vec3 rayOrigin, vec3 rayDir, vec3 center, float r);
+
+void main() {
+    screenColor = vec4(1.0, 0.0, 0.0, 1.0);
     float pixelX = gl_FragCoord.x;
     float pixelY = gl_FragCoord.y;
 
-    float stepX = (R - L) / screenSize.x;
-    float stepY = (T - B) / screenSize.y;
-
+    float stepX = (R - L) / screen_size.x;
+    float stepY = (T - B) / screen_size.y;
+    
     float x = L + stepX * (pixelX + 0.5);
     float y = B + stepY * (pixelY + 0.5);
-
+    
     vec3 pixelCenter = vec3(x, y, N);
     vec3 direction = normalize(pixelCenter - eye);
+    
 
-    screenColor = vec4(direction * 0.5 + 0.5, 1.0);
+    float tPlane = planeIntersect(eye, direction, planePoint, planeNormal);
+    float tSphere = sphereIntersect(eye, direction, sphereCenter, sphereRadius);
+
+    // find closest positive hit
+    if (tSphere > 0.0 && (tPlane < 0.0 || tSphere < tPlane)) {
+        // sphere is closer
+        vec3 hitPoint = eye + tSphere * direction;
+        vec3 normal = normalize(hitPoint - sphereCenter);
+        screenColor = vec4(phong(tSphere, eye, direction, normal, sphereColor), 1.0);
+    } else if (tPlane > 0.0) {
+        // plane is closer (or sphere missed)
+        screenColor = vec4(phong(tPlane, eye, direction, planeNormal, planeColor), 1.0);
+    } else {
+        // background
+        screenColor = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+}
+
+float planeIntersect(vec3 rayOrigin, vec3 rayDir, vec3 point, vec3 normal) {
+    float denom = dot(normal, rayDir);
+    
+    if (abs(denom) < 0.0001) {
+        return -1.0;
+    }
+    
+    vec3 F = point - rayOrigin;
+    float t = dot(F, normal) / denom;
+    
+    return t;
+}
+
+
+float sphereIntersect(vec3 rayOrigin, vec3 rayDir, vec3 center, float r){
+    vec3 origin = rayOrigin - center;
+
+    float a=1; 
+    float b= 2.0 * dot(rayDir, origin);
+    float rSQ= r * r; 
+    float c = dot(origin, origin) - rSQ;
+    float discriminant = (b * b) - (4 * a * c);
+
+    if(discriminant < 0){
+        return 0; 
+    }
+    else{
+        float t1 = ((-b) - sqrt(discriminant)) / (2 * a);
+        float t2 = ((-b) + sqrt(discriminant)) / (2 * a);
+
+        if (t1 > 0.0) return t1;  // nearest hit
+        if (t2 > 0.0) return t2;  // inside sphere, exiting
+        return -1.0;   
+
+    }
+}
+
+
+
+vec3 phong(float t, vec3 eye, vec3 direction, vec3 normal, vec3 color){
+
+    vec3 hit = eye + t * direction;
+
+    vec3 N = normal;
+    vec3 L = normalize(light_source - hit);
+    vec3 V = normalize(eye - hit);
+    vec3 R = reflect(-L, N);
+
+    vec3 ambient = MATERIAL.x * color;
+
+    float dotNL = max(dot(normal, L), 0.0);
+    vec3 diffuse = MATERIAL.y* dotNL * color; 
+
+
+    float dotRV= max(dot(R,V), 0.0);
+    vec3 specular = MATERIAL.z * pow(dotRV, SHININESS) * color;
+
+    return ambient + diffuse + specular;
+
 }

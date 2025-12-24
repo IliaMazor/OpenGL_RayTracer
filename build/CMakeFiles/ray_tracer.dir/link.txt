@@ -1,3 +1,0 @@
-"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\ray_tracer.dir/objects.a
-C:\msys64\mingw64\bin\ar.exe qc CMakeFiles\ray_tracer.dir/objects.a @CMakeFiles\ray_tracer.dir\objects1.rsp
-C:\msys64\mingw64\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\ray_tracer.dir/objects.a -Wl,--no-whole-archive -o ray_tracer.exe -Wl,--out-implib,libray_tracer.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\ray_tracer.dir\linkLibs.rsp
