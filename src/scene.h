@@ -16,6 +16,21 @@ struct Sphere{
 };
 
 
+struct Cylinder{
+    glm::vec3 center;
+    float radius;
+    float height;
+    glm::vec3 color;
+};
+
+
+struct Cube{
+    glm::vec3 center;
+    float cube_len;
+    glm::vec3 color;
+};
+
+
 class Scene{
 public:
     glm::vec3 eye;
@@ -25,12 +40,9 @@ public:
 
     PlaneData plane;
     Sphere sphere;
-
-    
-
+    Cylinder cylinder;
+    Cube cube;
 
     Scene();
     void sendUniforms(unsigned int shader);
-
-
 };
