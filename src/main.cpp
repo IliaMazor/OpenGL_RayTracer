@@ -1,173 +1,123 @@
 #include "config.h"
-#include "triangle_mesh.h"
+#include "global.h"
+#include "shader.h"
+#include "screen_quad.h"
 #include "scene.h"
+#include "camera.h"
+#include "input.h"
+
+// Global objects
+static ScreenQuad* screenQuad = nullptr;
+static Scene* scene = nullptr;
+static Camera* camera = nullptr;
+static GLFWwindow* g_window = nullptr;
+
+void init() {
+    // Compile shaders
+    shaderProgram = InitShader("src/shaders/vertex.glsl", "src/shaders/fragment.glsl");
+    if (shaderProgram == 0) {
+        std::cerr << "Failed to initialize shaders" << std::endl;
+        return;
+    }
+    glUseProgram(shaderProgram);
+
+    // Create screen quad
+    screenQuad = new ScreenQuad();
+
+    // Initialize camera
+    camera = new Camera();
+    camera->cacheUniforms(shaderProgram);
+    camera->sendUniforms();
+
+    // Initialize scene (no longer handles camera)
+    scene = new Scene();
+    scene->cacheUniforms(shaderProgram);
+    scene->sendUniforms();
+
+    // Initialize input system
+    Input::init(g_window, camera);
+}
+
+void render() {
+    screenQuad->draw();
+}
+
+void cleanup() {
+    delete screenQuad;
+    delete scene;
+    delete camera;
+    glDeleteProgram(shaderProgram);
+}
+
+void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+
+    // Update screen size in camera
+    if (camera != nullptr) {
+        camera->screenSize = glm::vec2(width, height);
+        camera->sendUniforms();
+    }
+}
 
 int main() {
-    std::ifstream file;
-    std::stringstream bufferdLines;
-    std::string line;
+    // Initialize GLFW
+    if (!glfwInit()) {
+        std::cerr << "Failed to initialize GLFW" << std::endl;
+        return -1;
+    }
 
-    file.open("src/shaders/vertex.txt");
-    
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+    // Create window
+    GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, nullptr, nullptr);
+    if (window == nullptr) {
+        std::cerr << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+    glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
+    // Initialize GLAD
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        std::cerr << "Failed to initialize GLAD" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
 
+    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
+    // Store window reference for init()
+    g_window = window;
 
-    generateWindow();
+    // Initialize rendering
+    init();
+
+    // Timing
+    float lastFrame = 0.0f;
+
+    // Render loop
+    while (!glfwWindowShouldClose(window)) {
+        // Calculate delta time
+        float currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        // Process input
+        Input::processInput(window, deltaTime);
+
+        // Update camera uniforms (position may have changed)
+        camera->sendUniforms();
+
+        render();
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    // Cleanup
+    cleanup();
+    glfwTerminate();
     return 0;
 }
-
-unsigned int make_shader(const std::string& file_path, const std::string& fragment_filepath){
-    std::vector<unsigned int> modules;
-    modules.push_back(make_module(file_path, GL_VERTEX_SHADER));
-    modules.push_back(make_module(fragment_filepath, GL_FRAGMENT_SHADER));
-
-    unsigned int shader= glCreateProgram();
-    for (unsigned int shader_module : modules){
-        glAttachShader(shader, shader_module);
-    }
-    glLinkProgram(shader);
-
-    int success;
-    glGetProgramiv(shader, GL_LINK_STATUS, &success);
-    if(!success){
-        char errorLog[1024];
-        glGetProgramInfoLog(shader, 1024, NULL, errorLog);
-        std::cout << "ERROR::SHADER::LINKING_FAILED\n" << errorLog << std::endl;
-        return 0;
-    }
-
-    for (unsigned int shader_module : modules){
-        glDeleteShader(shader_module);
-    }
-
-    return shader;
-
-}
-
-
-unsigned int make_module(const std::string& file_path, unsigned int type){
-    std::ifstream file;
-    std::stringstream bufferdLines;
-    std::string line;
-
-    file.open(file_path);
-
-    if(!file.is_open()){
-        std::cout << "Failed to open file: " << file_path << std::endl;
-        return 0;
-    }
-    
-    
-    while(std::getline(file, line)){
-        //std::cout << line << std::endl;
-        bufferdLines << line << "\n";
-    }
-
-
-
-    std::string shaderSource = bufferdLines.str();
-    const char* shaderSrc = shaderSource.c_str();
-    bufferdLines.str(""); //clear the buffer
-    file.close();  
-
-    unsigned int shaderModule = glCreateShader(type);
-    glShaderSource(shaderModule, 1, &shaderSrc, NULL);
-    glCompileShader(shaderModule);
-
-    int success;
-    glGetShaderiv(shaderModule, GL_COMPILE_STATUS, &success);
-    if(!success){
-        char errorLog[1024];
-        glGetShaderInfoLog(shaderModule, 1024, NULL, errorLog);
-        std::cout << "ERROR::SHADER::COMPILATION_FAILED\n" << errorLog << std::endl;
-        return 0;
-    }
-
-    return shaderModule;
-}
-
-
-void generateWindow(){
-    //window initialization
-    glfwInit(); // Initialize the GLFW library
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // Set the major version of OpenGL to 3
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // Set the minor version of OpenGL to 3
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // Use the core profile
-
-    GLFWwindow* window= glfwCreateWindow(800,800, "my window", NULL, NULL);
-    if (window == NULL) {
-        glfwTerminate(); // Terminate GLFW if window creation failed
-        return;
-    }
-    glfwMakeContextCurrent(window); // Make the window's context current
-
-
-    if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        glfwTerminate(); // Terminate GLFW if GLAD initialization failed
-        return;
-    }
-    
-    glViewport(0,0,800,800); // Set the viewport dimensions
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); // Set the framebuffer size callback
-    
-    TriangleMesh* triangleMesh= new TriangleMesh();
-
-    unsigned int shader = make_shader("src/shaders/vertex.txt", "src/shaders/fragment.txt");
-
-    Scene scene;
-    glUseProgram(shader);
-    scene.sendUniforms(shader);
-
-    // int w,h;
-    // glfwGetFramebufferSize(window, &w, &h); // Get the framebuffer size
-    // glViewport(0,0,w,h);
-    
-    //render loop
-    while(!glfwWindowShouldClose(window)) {
-        // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);  // teal-ish color
-        // glClear(GL_COLOR_BUFFER_BIT); // Clear the color buffer
-
-        // glUseProgram(shader);
-        triangleMesh->draw();
-        glfwSwapBuffers(window); // Swap front and back buffers
-        glfwPollEvents(); // Poll for and process events
-    }
-
-
-    //std:: cout << "Hello, World!" << std::endl;B
-    glDeleteProgram(shader); // Delete the shader program
-    delete triangleMesh; // Free the triangle mesh
-    glfwTerminate(); // Terminate GLFW
-}
-
-
-// void ray_trace(unsigned int shader)
-// {
-//     // get uniform locations
-//     int eyeLoc = glGetUniformLocation(shader, "eye");
-//     int screenLoc = glGetUniformLocation(shader, "screenSize");
-//     int lLoc = glGetUniformLocation(shader, "L");
-//     int rLoc = glGetUniformLocation(shader, "R");
-//     int bLoc = glGetUniformLocation(shader, "B");
-//     int tLoc = glGetUniformLocation(shader, "T");
-//     int nLoc = glGetUniformLocation(shader, "N");
-
-//     // set values (do this after glUseProgram)
-//     glUseProgram(shader);
-//     glUniform3f(eyeLoc, 0.0f, 0.0f, 60.0f);      // same as your Processing eye
-//     glUniform2f(screenLoc, 800.0f, 800.0f);
-//     glUniform1f(lLoc, -10.0f);
-//     glUniform1f(rLoc, 10.0f);
-//     glUniform1f(bLoc, -10.0f);
-//     glUniform1f(tLoc, 10.0f);
-//     glUniform1f(nLoc, 16.0f);
-
-// }
-
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}  

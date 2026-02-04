@@ -1,48 +1,52 @@
 #pragma once
-
 #include <glm/glm.hpp>
+#include <glad/glad.h>
 
-struct PlaneData{
+struct Plane {
     glm::vec3 point;
     glm::vec3 normal;
     glm::vec3 color;
+    float reflectivity;
 };
 
-
-struct Sphere{
+struct Sphere {
     glm::vec3 center;
     float radius;
     glm::vec3 color;
+    float reflectivity;
 };
 
-
-struct Cylinder{
+struct Cylinder {
     glm::vec3 center;
     float radius;
     float height;
     glm::vec3 color;
+    float reflectivity;
 };
 
-
-struct Cube{
+struct Cube {
     glm::vec3 center;
-    float cube_len;
+    float sideLength;
     glm::vec3 color;
+    float reflectivity;
 };
 
-
-class Scene{
+class Scene {
 public:
-    glm::vec3 eye;
-    glm::vec2 screen_size;
-    glm::vec3 light_source;
-    float L, R , B , T , N;
+    // Light
+    glm::vec3 lightSource;
 
-    PlaneData plane;
+    // Objects
+    Plane plane;
     Sphere sphere;
     Cylinder cylinder;
     Cube cube;
 
     Scene();
-    void sendUniforms(unsigned int shader);
+
+    // Call once after shader is compiled to cache uniform locations
+    void cacheUniforms(GLuint program);
+
+    // Call to send all scene data to GPU
+    void sendUniforms();
 };

@@ -7,15 +7,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(ray_tracer
     src/main.cpp
     src/glad.c
-    src/triangle_mesh.cpp
+    src/global.cpp
+    src/shader.cpp
+    src/screen_quad.cpp
     src/scene.cpp
+    src/camera.cpp
+    src/input.cpp
 )
 
-target_include_directories(ray_tracer PRIVATE 
+target_include_directories(ray_tracer PRIVATE
     ${CMAKE_SOURCE_DIR}/Dependencies
 )
 
-target_link_libraries(ray_tracer PRIVATE 
+target_link_libraries(ray_tracer PRIVATE
     ${CMAKE_SOURCE_DIR}/Dependencies/GLFW/libglfw3.a
     opengl32
 )
